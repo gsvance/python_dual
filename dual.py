@@ -143,9 +143,7 @@ class Dual(numbers.Number):
         return Dual(-a._real, -a._dual)
 
     def __abs__(a):
-        # Does this operation make sense?
-        # a * a.conjugate() == a.real**2
-        return math.hypot(a._real, a._dual)
+        return abs(self._real)
 
     def conjugate(a):
         return Dual(a._real, -a._dual)
@@ -194,9 +192,6 @@ class Dual(numbers.Number):
 ep = Dual(0.0, 1.0)
 eps = Dual(0.0, 1.0)
 
-# Extensions of math functions to handle dual
-# like sin and sqrt and such (see cmath)
-
 inf = float('inf')
 infep = Dual(0.0, inf)
 infeps = Dual(0.0, inf)
@@ -204,3 +199,10 @@ infeps = Dual(0.0, inf)
 nan = float('nan')
 nanep = Dual(0.0, nan)
 naneps = Dual(0.0, nan)
+
+# Extensions of math functions to handle dual
+# like sin and sqrt and such (see cmath)
+
+def abs2(x):
+    """abs(x) ** 2"""
+    return x.real ** 2
