@@ -1,5 +1,6 @@
 """module docstring"""
 
+import fractions
 import math
 import numbers
 import operator
@@ -58,15 +59,65 @@ class Dual(numbers.Number):
 
     # Format methods...
 
-    # Operator fallbacks
+    def _operator_fallbacks(monomorphic_operator, fallback_operator):
 
-    # Details for arithmetic algos
+        # This function doesn't actually use the fallback_operator at the
+        # moment, so maybe that isn't needed?
 
-    # Adding
+        def forward(a, b):
+            if isinstance(b, Dual):
+                return monomorphic_operator(a, b)
+            if isinstance(b, (int, float, fractions.Fraction)):
+                return monomorphic_operator(a, Dual(b))
+            # If b is complex, that should maybe be an error
+            # There's no sensible way to compute, e.g., 1+2j + 3+4ep
+            # At least, not without a hybrid class of some sort
+            if isinstance(b, complex):
+                pass
+            return NotImplemented
+        forward.__name__ = '__' + fallback_operator.__name__ + '__'
+        forward.__doc__ = monomorphic_operator.__doc__
 
-    # Subtracting
+        def reverse(b, a):
+            if isinstance(b, numbers.Real):
+                return monomorphic_operator(Dual(float(a)), b)
+            # Again, if b in complex, that should maybe be an error
+            if isinstance(b, numbers.Complex):
+                pass
+            return NotImplemented
+        reverse.__name__ = '__r' + fallback_operator.__name__ + '__'
+        reverse.__doc__ = monomorphic_operator.__doc__
 
-    # Multiplying
+        return forward, reverse
+
+    # Dual number arithmetic algorithms
+    #
+    # Dual numbers can be added component-wise, and multiplied by the formula
+    #
+    #   (a + b*ep) * (c + d*ep) = a*c + (a*d+b*c)*ep
+    #
+    # which follows from the property ep**2 == 0 and the fact that
+    # multiplication is a bilinear operation.
+
+    def _add(a, b):
+        """a + b"""
+        return Dual(a._real + b._real, a._dual + b._dual)
+
+    __add__, __radd__ = _operator_fallbacks(_add, operator.add)
+
+    def _sub(a, b):
+        """a - b"""
+        return Dual(a._real - b._real, a._dual - b._dual)
+
+    __sub__, __rsub__ = _operator_fallbacks(_sub, operator.sub)
+
+    def _mul(a, b):
+        """a * b"""
+        r = a._real * b._real
+        d = a._real * b._dual + a._dual * b._real
+        return Dual(r, d)
+
+    __mul__, __rmul__ = _operator_fallbacks(_mul, operator.mul)
 
     # True dividing
 
@@ -85,6 +136,8 @@ class Dual(numbers.Number):
         return Dual(-a._real, -a._dual)
 
     def __abs__(a):
+        # Does this operation make sense?
+        # a * a.conjugate() == a.real**2
         return math.hypot(a._real, a._dual)
 
     def conjugate(a):
