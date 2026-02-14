@@ -26,12 +26,67 @@ class Dual(numbers.Number):
 
     __slots__ = ('_real', '_dual')
 
+    # Dual numbers are immutable, so use __new__ instead of __init__
     def __new__(cls, real=0.0, dual=None):
-        # real could be a float, or a string we need to parse
+        """constructor docstring"""
         self = super(Dual, cls).__new__(cls)
-        self._real = float(real)
-        self._dual = float(dual) if dual is not None else 0.0
-        return self
+
+        if dual is None:
+
+            if type(real) is float:
+                self._real = real
+                self._dual = 0.0
+                return self
+
+            if isinstance(real, Dual):
+                self._real = real.real
+                self._dual = real.dual
+                return self
+
+            if (
+                isinstance(real, numbers.Real)
+                or (not isinstance(real, type) and hasattr(real, '__float__'))
+            ):
+                self._real = float(real)
+                self._dual = 0.0
+                return self
+
+            if isinstance(real, str):
+                # Handle parsing a dual number from a string
+                assert False, "string parsing not yet implemented"
+                return self
+
+            raise TypeError(
+                "argument should be a string or a Dual "
+                + "instance or be convertable to float"
+            )
+
+        if type(real) is float is type(dual):
+            self._real = real
+            self._dual = dual
+            return self
+
+        if isinstance(real, Dual) and isinstance(dual, Dual):
+            self._real = real.real
+            self._dual = dual.real + real.dual
+            return self
+
+        if isinstance(real, numbers.Real) and isinstance(dual, numbers.Real):
+            self._real = float(real)
+            self._dual = float(dual)
+            return self
+
+        if isinstance(real, Dual) and isinstance(dual, numbers.Real):
+            self._real = real.real
+            self._dual = float(dual)
+            return self
+
+        if isinstance(real, numbers.Real) and isinstance(dual, Dual):
+            self._real = float(real)
+            self._dual = dual.real
+            return self
+
+        raise TypeError("both arguments should be Dual Rational instances")
 
     # Alternate constructors as classmethods...
     # including constructors for internal use only
