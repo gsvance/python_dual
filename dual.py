@@ -119,13 +119,20 @@ class Dual(numbers.Number):
 
     __mul__, __rmul__ = _operator_fallbacks(_mul, operator.mul)
 
-    # True dividing
+    def _div(a, b):
+        """a / b"""
+        if b._real == 0.0:
+            raise ZeroDivisionError(
+                f"division by dual number {b!s} with zero real part"
+            )
+        r = a._real / b._real
+        d = a._dual / b._real - a._real * b._dual / b._real ** 2
+        return Dual(r, d)
 
-    # Floordiv?
+    __truediv__, __rtruediv__ = _operator_fallbacks(_div, operator.truediv)
 
-    # Divmod?
-
-    # Mod?
+    # Does it make any sense to implement floordiv, divmod, or mod? What would
+    # they look like for dual numbers?
 
     # Pow
 
