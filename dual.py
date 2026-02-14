@@ -229,7 +229,7 @@ class Dual(numbers.Number):
         return Dual(-a._real, -a._dual)
 
     def __abs__(a):
-        return abs(self._real)
+        return abs(a._real)
 
     def conjugate(a):
         return Dual(a._real, -a._dual)
