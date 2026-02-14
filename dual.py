@@ -7,11 +7,42 @@ import operator
 import re
 
 
-__all__ = ['Dual']  # ep, eps, inf, infep, infeps, etc.
+__all__ = [
+    'set_epsilon_variant',
+    'Dual',
+    'ep',
+    'inf',
+    'infep',
+    'nan',
+    'nanep',
+    'abs2',
+]
 
 
-# ep or eps?
-EPSILON = 'ep'
+# Two possible string representations for epsilon
+_ASCII_EPSILON = "ep"
+_MINUSCULE_EPSILON = chr(0x03B5)
+_LUNATE_EPSILON = chr(0x03F5)
+_LATIN_EPSILON = chr(0x025B)
+
+# Default to the ASCII representation for epsilon
+_epsilon = _ASCII_EPSILON
+
+
+def set_epsilon_variant(v, /):
+    """Set which representation of epsilon is used for output strings."""
+    global _epsilon
+    match v.lower():
+        case "ascii":
+            _epsilon = _ASCII_EPSILON
+        case "minuscule":
+            _epsilon = _MINUSCULE_EPSILON
+        case "lunate":
+            _epsilon = _LUNATE_EPSILON
+        case "latin":
+            _epsilon = _LATIN_EPSILON
+        case _:
+            raise ValueError(f"{v!r} is not a known epsilon variant")
 
 
 _DUAL_FORMAT = re.compile(r"""...""")
@@ -53,9 +84,9 @@ class Dual(numbers.Number):
         if self._dual == 0.0:
             return str(self._real)
         if self._real == 0.0:
-            return f"{self._dual!s}{EPSILON}"
+            return f"{self._dual!s}{_epsilon}"
         dual_sign = '+' if self._dual > 0.0 else '-'
-        return f"{self._real!s}{dual_sign}{abs(self._dual)!s}{EPSILON}"
+        return f"{self._real!s}{dual_sign}{abs(self._dual)!s}{_epsilon}"
 
     # Format methods...
 
@@ -188,17 +219,13 @@ class Dual(numbers.Number):
         return self.__class__(self._real, self._dual)
 
 
-# ep or eps?
 ep = Dual(0.0, 1.0)
-eps = Dual(0.0, 1.0)
 
 inf = float('inf')
 infep = Dual(0.0, inf)
-infeps = Dual(0.0, inf)
 
 nan = float('nan')
 nanep = Dual(0.0, nan)
-naneps = Dual(0.0, nan)
 
 # Extensions of math functions to handle dual
 # like sin and sqrt and such (see cmath)
