@@ -122,7 +122,8 @@ class Dual(numbers.Number):
     # Alternate constructors as classmethods...
     # including constructors for internal use only
 
-    # Return tuple of two floats
+    def as_float_pair(self):
+        return self._real, self._dual
 
     @property
     def real(self):
@@ -250,10 +251,44 @@ class Dual(numbers.Number):
             return hash(self._real)
         return hash((self._real, self._dual))
 
-    # Eq and other comparisons
-    # Does dual need <, >, <=, >= ?
-    # Should they be compared pairwise like (real, dual) where epsilon gets
-    # 2nd priority since it's an infinitesimal?
+    def __eq__(a, b):
+        """a == b"""
+        if type(b) is float or type(b) is int:
+            return a._real == b and a._dual == 0.0
+        if isinstance(b, Dual):
+            return a._real == b.real and a._dual == b.dual
+        if isinstance(b, numbers.Real):
+            return a._real == float(b) and a._dual == 0.0
+        if isinstance(b, numbers.Complex) and b.imag == 0.0:
+            return a._real == b.real and a._dual == 0.0
+        # Since a does not know how to compare with b, give b the chance to
+        # compare itself with a
+        return NotImplemented
+
+    # Don't need to implement __ne__ since object.__ne__ just inverts __eq__
+
+    def _richcmp(self, other, op):
+        if isinstance(other, Dual):
+            return op(self.as_float_pair(), other.as_float_pair())
+        if isinstance(other, numbers.Real):
+            return op(self.as_float_pair(), (float(other), 0.0))
+        return NotImplemented
+
+    def __lt__(a, b):
+        """a < b"""
+        return a._richcmp(b, operator.lt)
+
+    def __gt__(a, b):
+        """a > b"""
+        return a._richcmp(b, operator.gt)
+
+    def __le__(a, b):
+        """a <= b"""
+        return a._richcmp(b, operator.le)
+
+    def __ge__(a, b):
+        """a >= b"""
+        return a._richcmp(b, operator.ge)
 
     def __bool__(a):
         return a._real != 0.0 or a._dual != 0.0
