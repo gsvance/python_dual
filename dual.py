@@ -192,21 +192,19 @@ class Dual(numbers.Number):
                 return monomorphic_operator(a, b)
             if isinstance(b, (int, float, fractions.Fraction)):
                 return monomorphic_operator(a, Dual(b))
-            # If b is complex, that should maybe be an error
-            # There's no sensible way to compute, e.g., 1+2j + 3+4ep
-            # At least, not without a hybrid class of some sort
-            if isinstance(b, complex):
-                pass
+            # If b is something else (including any subtype of Complex), give
+            # the other object a chance to decide what happens. If it has no
+            # ideas either, then a TypeError will be raised.
             return NotImplemented
         forward.__name__ = '__' + fallback_operator.__name__ + '__'
         forward.__doc__ = monomorphic_operator.__doc__
 
         def reverse(b, a):
-            if isinstance(b, numbers.Real):
+            if isinstance(a, numbers.Real):
                 return monomorphic_operator(Dual(float(a)), b)
-            # Again, if b in complex, that should maybe be an error
-            if isinstance(b, numbers.Complex):
-                pass
+            # If b is something else (including subtypes of Complex), then we
+            # do not implement a solution. This return value will lead to a
+            # TypeError being raised.
             return NotImplemented
         reverse.__name__ = '__r' + fallback_operator.__name__ + '__'
         reverse.__doc__ = monomorphic_operator.__doc__
