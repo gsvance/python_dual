@@ -317,9 +317,51 @@ infep = Dual(0.0, inf)
 nan = float('nan')
 nanep = Dual(0.0, nan)
 
-# Extensions of math functions to handle dual
-# like sin and sqrt and such (see cmath)
+# Are these useful?
+pi = math.pi
+e = math.e
+tau = math.tau
+
+# Keep in mind for all these functions that
+#   f(a + b*ep) = f(a) + b*f'(a)*ep
+# for the dual numbers, where f' is the derivative of f
 
 def abs2(x):
     """abs(x) ** 2"""
     return x.real ** 2
+
+normed = None  # Normalization
+rect = None  # Un-normalization
+
+exp = None  # exp(x) with dydx = exp(x)
+exp2 = None  # 2**x with dydx = ln(2)*2**x
+expm1 = None  # exmpm1(x) with dydx = exp(x)
+log = None  # ln(x) with dydx = 1/x
+log1p = None  # log1p(x) with dydx = 1/(1+x)
+log2 = None  # log2(x) with dydx = 1/(x*ln(2))
+log10 = None  # log10(x) with dydx = 1/(x*ln(10))
+sqrt = None  # sqrt(x) with dydx = 1/(2*sqrt(x))
+cbrt = None  # cbrt(x) with dydx = 1/(3*(cbrt(x))**2)
+pow = None  # pow(x, y) with derivative ????
+
+acos = None  # arccos(x) with dydx = -1/sqrt(1-x**2)
+asin = None  # arcsin(x) with dydx = 1/sqrt(1-x**2)
+atan = None  # arctan(x) with dydx = 1/(x**2+1)
+cos = None  # cos(x) with dydx = -sin(x)
+sin = None  # sin(x) with dydx = cos(x)
+tan = None  # tan(x) with dydx = (sec(x))**2
+
+degrees = None  # degrees(x) with dydx = 180/pi
+radians = None  # radians(x) with dydx = pi/180
+
+acosh = None  # acosh(x) with dydx = 1/(sqrt(x-1)*sqrt(x+1))
+asinh = None  # asinh(x) with dydx = 1/sqrt(x**2+1)
+atanh = None  # atanh(x) with dydx = 1/(1-x**2)
+cosh = None  # cosh(x) with dydx = sinh(x)
+sinh = None  # sinh(x) with dydx = cosh(x)
+tanh = None  # tanh(x) with dydx = (sech(x))**2
+
+isfinite = None
+isinf = None
+isnan = None
+isclose = None
