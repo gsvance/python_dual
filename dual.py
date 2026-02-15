@@ -345,6 +345,9 @@ class Dual(numbers.Number):
         return self.__class__(self._real, self._dual)
 
 
+# Dual number mathematical constants
+
+
 ep = Dual(0.0, 1.0)
 
 inf = float('inf')
@@ -358,27 +361,118 @@ pi = math.pi
 e = math.e
 tau = math.tau
 
+
 # Keep in mind for all these functions that
 #   f(a + b*ep) = f(a) + b*f'(a)*ep
 # for the dual numbers, where f' is the derivative of f
+
+
+# Dual number coordinate conversions
+
 
 def abs2(x):
     """abs(x) ** 2"""
     return x.real ** 2
 
+
 normed = None  # Normalization
 rect = None  # Un-normalization
 
-exp = None  # exp(x) with dydx = exp(x)
-exp2 = None  # 2**x with dydx = ln(2)*2**x
-expm1 = None  # exmpm1(x) with dydx = exp(x)
-log = None  # ln(x) with dydx = 1/x
-log1p = None  # log1p(x) with dydx = 1/(1+x)
-log2 = None  # log2(x) with dydx = 1/(x*ln(2))
-log10 = None  # log10(x) with dydx = 1/(x*ln(10))
-sqrt = None  # sqrt(x) with dydx = 1/(2*sqrt(x))
-cbrt = None  # cbrt(x) with dydx = 1/(3*(cbrt(x))**2)
-pow = None  # pow(x, y) with derivative ????
+
+# Functions for exponents, logarithms, and powers
+
+
+_LOG_2 = math.log(2.0)
+_LOG_10 = math.log(10.0)
+
+
+def exp(x):
+    """exp(x) with dy/dx = exp(x)"""
+    if isinstance(x, Dual):
+        if x.real == 0.0:
+            return Dual(1.0, x.dual)
+        exp_real = math.exp(x.real)
+        return Dual(exp_real, x.dual * exp_real)
+    return Dual(math.exp(x))
+
+
+def exp2(x):
+    """exp2(x) with dy/dx = log(2)*exp2(x)"""
+    if isinstance(x, Dual):
+        if x.real == 0.0:
+            return Dual(1.0, x.dual * _LOG_2)
+        exp2_real = math.exp2(x.real)
+        return Dual(exp2_real, x.dual * _LOG_2 * exp2_real)
+    return Dual(math.exp2(x))
+
+
+def expm1(x):
+    """expm1(x) with dy/dx = exp(x)"""
+    if isinstance(x, Dual):
+        if x.real == 0.0:
+            return Dual(0.0, x.dual)
+        return Dual(math.expm1(x.real), x.dual * math.exp(x.real))
+    return Dual(math.expm1(x))
+
+
+def log(x):
+    """log(x) with dy/dx = 1/x"""
+    if isinstance(x, Dual):
+        if x.real == 1.0:
+            return Dual(0.0, x.dual)
+        return Dual(math.log(x.real), x.dual / x.real)
+    return Dual(math.log(x))
+
+
+def log2(x):
+    """log2(x) with dy/dx = 1/(x*log(2))"""
+    if isinstance(x, Dual):
+        if x.real == 1.0:
+            return Dual(0.0, x.dual / _LOG_2)
+        return Dual(math.log2(x.real), x.dual / (x.real * _LOG_2))
+    return Dual(math.log2(x))
+
+
+def log10(x):
+    """log10(x) with dy/dx = 1/(x*log(10))"""
+    if isinstance(x, Dual):
+        if x.real == 1.0:
+            return Dual(0.0, x.dual / _LOG_10)
+        return Dual(math.log10(x.real), x.dual / (x.real * _LOG_10))
+    return Dual(math.log10(x))
+
+
+def log1p(x):
+    """log1p(x) with dy/dx = 1/(1+x)"""
+    if isinstance(x, Dual):
+        if x.real == 0.0:
+            return Dual(0.0, x.dual)
+        return Dual(math.log1p(x.real), x.dual / (1.0 + x.real))
+    return Dual(math.log1p(x))
+
+
+def sqrt(x):
+    """sqrt(x) with dy/dx = 1/(2*sqrt(x))"""
+    if isinstance(x, Dual):
+        if x.real == 1.0:
+            return Dual(1.0, x.dual * 0.5)
+        sqrt_real = math.sqrt(x.real)
+        return Dual(sqrt_real, x.dual / (2.0 * sqrt_real))
+    return Dual(math.sqrt(x))
+
+
+def cbrt(x):
+    """cbrt(x) with dydx = 1/(3*(cbrt(x))**2)"""
+    if isinstance(x, Dual):
+        if x.real == 1.0:
+            return Dual(1.0, x.dual / 3.0)
+        cbrt_real = math.cbrt(x.real)
+        return Dual(cbrt_real, x.dual / (3.0 * cbrt_real**2))
+    return Dual(math.cbrt(x))
+
+
+# Trigonometric and inverse trigonometric functions
+
 
 acos = None  # arccos(x) with dydx = -1/sqrt(1-x**2)
 asin = None  # arcsin(x) with dydx = 1/sqrt(1-x**2)
@@ -386,9 +480,12 @@ atan = None  # arctan(x) with dydx = 1/(x**2+1)
 cos = None  # cos(x) with dydx = -sin(x)
 sin = None  # sin(x) with dydx = cos(x)
 tan = None  # tan(x) with dydx = (sec(x))**2
-
 degrees = None  # degrees(x) with dydx = 180/pi
 radians = None  # radians(x) with dydx = pi/180
+
+
+# Hyperbolic trigonometric functions
+
 
 acosh = None  # acosh(x) with dydx = 1/(sqrt(x-1)*sqrt(x+1))
 asinh = None  # asinh(x) with dydx = 1/sqrt(x**2+1)
@@ -396,6 +493,10 @@ atanh = None  # atanh(x) with dydx = 1/(1-x**2)
 cosh = None  # cosh(x) with dydx = sinh(x)
 sinh = None  # sinh(x) with dydx = cosh(x)
 tanh = None  # tanh(x) with dydx = (sech(x))**2
+
+
+# Classification and other floating point functions
+
 
 isfinite = None
 isinf = None
