@@ -219,6 +219,16 @@ class Dual(numbers.Number):
     #
     # which follows from the property ep**2 == 0 and the fact that
     # multiplication is a bilinear operation.
+    #
+    # ...division...
+    #
+    # In general, the operation of exponentiation is given by the formula
+    #
+    #   (a + b*ep) ** (c + d*ep) = a**c + (a**c)*(d*log(a)+(b*c)/a)*ep
+    #
+    # which simplifies considerably if any of the values of `b`, `c`, or `d`
+    # are zero. However, it is not possible if `a` is zero given the required
+    # log of and division by `a`.
 
     def _add(a, b):
         """a + b"""
@@ -255,7 +265,17 @@ class Dual(numbers.Number):
     # Does it make any sense to implement floordiv, divmod, or mod? What would
     # they look like for dual numbers?
 
-    # Pow
+    def _pow(a, b):
+        """a ** b"""
+        if a._real == 0.0:
+            raise ZeroDivisionError(
+                f"applying exponent to dual number {a!s} with zero real part"
+            )
+        r = a._real ** b._real
+        d = r * (b._dual * math.log(a._real) + a._dual * b._real / a._real)
+        return Dual(r, d)
+
+    __pow__, __rpow__ = _operator_fallbacks(_pow, operator.pow)
 
     def __pos__(a):
         return Dual(a._real, a._dual)
