@@ -19,36 +19,32 @@ __all__ = [
 ]
 
 
-# Two possible string representations for epsilon
-_ASCII_EPSILON = "ep"
-_MINUSCULE_EPSILON = chr(0x03B5)
-_LUNATE_EPSILON = chr(0x03F5)
-_LATIN_EPSILON = chr(0x025B)
+# Several possible string representations for epsilon
+_EPSILON_VARIANTS = {
+    "ascii": "ep",
+    "minuscule": chr(0x03B5),
+    "lunate": chr(0x03F5),
+    "latin": chr(0x025B),
+}
 
 # Default to the ASCII representation for epsilon
-_epsilon = _ASCII_EPSILON
+_epsilon = _EPSILON_VARIANTS["ascii"]
 
 
 def set_epsilon_variant(v, /):
     """Set which representation of epsilon is used for output strings."""
     global _epsilon
-    match v.lower():
-        case "ascii":
-            _epsilon = _ASCII_EPSILON
-        case "minuscule":
-            _epsilon = _MINUSCULE_EPSILON
-        case "lunate":
-            _epsilon = _LUNATE_EPSILON
-        case "latin":
-            _epsilon = _LATIN_EPSILON
-        case _:
-            raise ValueError(f"{v!r} is not a known epsilon variant")
+    try:
+        _epsilon = _EPSILON_VARIANTS[v.lower()]
+    except KeyError as exc:
+        raise ValueError(f"{v!r} is not a known epsilon variant") from exc
 
 
 # A few component strings to use as building blocks for bigger regexes
 _LEADING_WHITESPACE = r"\A\s*"
 _FLOAT_WITH_OPTIONAL_SIGN = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 _FLOAT_WITH_MANDATORY_SIGN = r"[-+](?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+_ANY_EPSILON_VARIANT = "(?:" + "|".join(_EPSILON_VARIANTS.values()) + ")"
 _TRAILING_WHITESPACE = r"\s*\Z"
 
 # Three regexes: real part only, dual part only, and both parts present
@@ -59,13 +55,13 @@ _DUAL_FORMAT_REAL_ONLY = re.compile(
 )
 _DUAL_FORMAT_DUAL_ONLY = re.compile(
     _LEADING_WHITESPACE
-    + "(" + _FLOAT_WITH_OPTIONAL_SIGN + ")" + _ASCII_EPSILON
+    + "(" + _FLOAT_WITH_OPTIONAL_SIGN + ")" + _ANY_EPSILON_VARIANT
     + _TRAILING_WHITESPACE
 )
 _DUAL_FORMAT_BOTH_PARTS = re.compile(
     _LEADING_WHITESPACE
     + "(" + _FLOAT_WITH_OPTIONAL_SIGN + ")"
-    + "(" + _FLOAT_WITH_MANDATORY_SIGN + ")" + _ASCII_EPSILON
+    + "(" + _FLOAT_WITH_MANDATORY_SIGN + ")" + _ANY_EPSILON_VARIANT
     + _TRAILING_WHITESPACE
 )
 
