@@ -393,8 +393,23 @@ def abs2(x):
     return x.real ** 2
 
 
-normed = None  # Normalization
-rect = None  # Un-normalization
+def slope(x):
+    """m such that x = r * (1 + m*ep)"""
+    if x.real == 0.0:
+        raise ZeroDivisionError(
+            f"slope of dual number {x!s} with real part zero"
+        )
+    return x.dual / x.real
+
+
+def polar(x):
+    """(r, m) such that x = r * (1 + m*ep)"""
+    return x.real, slope(x)
+
+
+def rect(r, m):
+    """r * (1 + m*ep)"""
+    return Dual(r, r * m)
 
 
 # Functions for exponents, logarithms, and roots
