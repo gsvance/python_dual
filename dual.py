@@ -379,7 +379,7 @@ normed = None  # Normalization
 rect = None  # Un-normalization
 
 
-# Functions for exponents, logarithms, and powers
+# Functions for exponents, logarithms, and roots
 
 
 _LOG_2 = math.log(2.0)
