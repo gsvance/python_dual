@@ -45,7 +45,29 @@ def set_epsilon_variant(v, /):
             raise ValueError(f"{v!r} is not a known epsilon variant")
 
 
-_DUAL_FORMAT = re.compile(r"""...""")
+# A few component strings to use as building blocks for bigger regexes
+_LEADING_WHITESPACE = r"\A\s*"
+_FLOAT_WITH_OPTIONAL_SIGN = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+_FLOAT_WITH_MANDATORY_SIGN = r"[-+](?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+_TRAILING_WHITESPACE = r"\s*\Z"
+
+# Three regexes: real part only, dual part only, and both parts present
+_DUAL_FORMAT_REAL_ONLY = re.compile(
+    _LEADING_WHITESPACE
+    + "(" + _FLOAT_WITH_OPTIONAL_SIGN + ")"
+    + _TRAILING_WHITESPACE
+)
+_DUAL_FORMAT_DUAL_ONLY = re.compile(
+    _LEADING_WHITESPACE
+    + "(" + _FLOAT_WITH_OPTIONAL_SIGN + ")" + _ASCII_EPSILON
+    + _TRAILING_WHITESPACE
+)
+_DUAL_FORMAT_BOTH_PARTS = re.compile(
+    _LEADING_WHITESPACE
+    + "(" + _FLOAT_WITH_OPTIONAL_SIGN + ")"
+    + "(" + _FLOAT_WITH_MANDATORY_SIGN + ")" + _ASCII_EPSILON
+    + _TRAILING_WHITESPACE
+)
 
 
 # Helper functions here
@@ -84,8 +106,22 @@ class Dual(numbers.Number):
 
             if isinstance(real, str):
                 # Handle parsing a dual number from a string
-                assert False, "string parsing not yet implemented"
-                return self
+                match_both_parts = _DUAL_FORMAT_BOTH_PARTS.fullmatch(real)
+                if match_both_parts is not None:
+                    self._real = float(match_both_parts.group(1))
+                    self._dual = float(match_both_parts.group(2))
+                    return self
+                match_dual_only = _DUAL_FORMAT_DUAL_ONLY.fullmatch(real)
+                if match_dual_only is not None:
+                    self._real = 0.0
+                    self._dual = float(match_dual_only.group(1))
+                    return self
+                match_real_only = _DUAL_FORMAT_REAL_ONLY.fullmatch(real)
+                if match_real_only is not None:
+                    self._real = float(match_real_only.group(1))
+                    self._dual = 0.0
+                    return self
+                raise ValueError(f"invalid literal for Dual: {real!r}")
 
             raise TypeError(
                 "argument should be a string or a Dual "
