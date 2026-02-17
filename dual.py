@@ -213,10 +213,19 @@ class Dual(numbers.Number):
     #
     #   (a + b*ep) * (c + d*ep) = a*c + (a*d+b*c)*ep
     #
-    # which follows from the property ep**2 == 0 and the fact that
+    # which follows from the property `ep**2 == 0` and the fact that
     # multiplication is a bilinear operation.
     #
-    # ...division...
+    # To divide one dual number by another, we can take a similar approach as
+    # when diving two complex numbers. We multiply both the numerator and
+    # denominator by the conjugate of the denominator to remove the dual part
+    # of the denominator. This leads to the formula
+    #
+    #   a + b*ep   a   (b*c-a*d)*ep
+    #   -------- = - + ------------
+    #   c + d*ep   c       c^2
+    #
+    # where `a/c`` is the real part of the quotient.
     #
     # In general, the operation of exponentiation is given by the formula
     #
