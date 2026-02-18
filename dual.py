@@ -1,5 +1,6 @@
 """module docstring"""
 
+import decimal
 import fractions
 import math
 import numbers
@@ -149,12 +150,42 @@ class Dual(numbers.Number):
             self._dual = dual.real
             return self
 
-        raise TypeError("both arguments should be Dual Rational instances")
+        raise TypeError("both arguments should be Dual or Real instances")
 
-    # Alternate constructors as classmethods...
-    # including constructors for internal use only
+    @classmethod
+    def from_number(cls, number):
+        """Convert other types of number to a dual number instance."""
+        if type(number) is float:
+            return cls(number)
+        if (
+            isinstance(number, numbers.Real)
+            or (not isinstance(number, type) and hasattr(number, '__float__'))
+        ):
+            return cls(float(number))
+        raise TypeError("number should be a float or be convertable to float")
+
+    @classmethod
+    def from_float(cls, float_):
+        """Convert a floating point number to a dual number instance."""
+        if type(float_) is float:
+            return cls(float_)
+        raise TypeError(
+            f"{cls.__name__}.from_float() accepts only floats"
+            + f", not {float_!r} ({type(float_).__name__})"
+        )
+
+    @classmethod
+    def from_decimal(cls, decimal_):
+        """Create a dual number by converting a Decimal instance to a float."""
+        if isinstance(decimal_, decimal.Decimal):
+            return cls(float(decimal_))
+        raise TypeError(
+            f"{cls.__name__}.from_decimal() accepts only Decimal instances"
+            + f", not {decimal_!r} ({type(decimal_).__name__})"
+        )
 
     def as_float_pair(self):
+        """Return a pair of floats (real, dual) composing the dual number."""
         return self._real, self._dual
 
     @property
