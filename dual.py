@@ -512,14 +512,60 @@ def cbrt(x):
 # Trigonometric and inverse trigonometric functions
 
 
-acos = None  # arccos(x) with dydx = -1/sqrt(1-x**2)
-asin = None  # arcsin(x) with dydx = 1/sqrt(1-x**2)
-atan = None  # arctan(x) with dydx = 1/(x**2+1)
-cos = None  # cos(x) with dydx = -sin(x)
-sin = None  # sin(x) with dydx = cos(x)
-tan = None  # tan(x) with dydx = (sec(x))**2
-degrees = None  # degrees(x) with dydx = 180/pi
-radians = None  # radians(x) with dydx = pi/180
+def degrees(x):
+    """degrees(x) with dy/dx = 180/pi"""
+    if isinstance(x, Dual):
+        return Dual(math.degrees(x.real), math.degrees(x.dual))
+    return Dual(math.degrees(x))
+
+
+def radians(x):
+    """radians(x) with dy/dx = pi/180"""
+    if isinstance(x, Dual):
+        return Dual(math.radians(x.real), math.radians(x.dual))
+    return Dual(math.radians(x))
+
+
+def sin(x):
+    """sin(x) with dy/dx = cos(x)"""
+    if isinstance(x, Dual):
+        return Dual(math.sin(x.real), x.dual * math.cos(x.real))
+    return Dual(math.sin(x))
+
+
+def cos(x):
+    """cos(x) with dy/dx = -sin(x)"""
+    if isinstance(x, Dual):
+        return Dual(math.cos(x), -x.dual * math.sin(x.real))
+    return Dual(math.cos(x))
+
+
+def tan(x):
+    """tan(x) with dy/dx = (sec(x))**2"""
+    if isinstance(x, Dual):
+        return Dual(math.tan(x.real), x.dual / math.cos(x.real)**2)
+    return Dual(math.tan(x))
+
+
+def asin(x):
+    """arcsin(x) with dy/dx = 1/sqrt(1-x**2)"""
+    if isinstance(x, Dual):
+        return Dual(math.asin(x.real), x.dual / math.sqrt(1.0 - x.real**2))
+    return Dual(math.asin(x))
+
+
+def acos(x):
+    """arccos(x) with dy/dx = -1/sqrt(1-x**2)"""
+    if isinstance(x, Dual):
+        return Dual(math.acos(x.real), -x.dual / math.sqrt(1.0 - x.real**2))
+    return Dual(math.acos(x))
+
+
+def atan(x):
+    """arctan(x) with dy/dx = 1/(x**2+1)"""
+    if isinstance(x, Dual):
+        return Dual(math.atan(x.real), x.dual / (x.real**2 + 1.0))
+    return Dual(math.atan(x))
 
 
 # Hyperbolic trigonometric functions
