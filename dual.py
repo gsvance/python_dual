@@ -1,5 +1,6 @@
 """module docstring"""
 
+import abc
 import decimal
 import fractions
 import math
@@ -18,6 +19,145 @@ __all__ = [
     'nanep',
     'abs2',
 ]
+
+
+class AbstractDual(numbers.Number):
+    """AbstractDual defines the operations that work on dual numbers.
+
+    In the Python numerical hierarchy, AbstractDual exists "to the side of"
+    Complex. While dual numbers are definitely a kind of Number and every Real
+    is a valid dual number, they are not compatible with complex numbers. Dual
+    numbers have a real part, no imaginary part, and a "dual part," and their
+    "dual conjugate" operation flips the sign on the dual part rather than the
+    imaginary part, with makes it inconsistent with the complex conjugate.
+    """
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def as_dual(self):
+        """Convert self to a concrete dual number with float parts."""
+        raise NotImplementedError
+
+    def __bool__(self):
+        """Return True if self is nonzero and False otherwise."""
+        return self != 0
+
+    @property
+    @abc.abstractmethod
+    def real(self):
+        """Return the real part of this dual number."""
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def dual(self):
+        """Return the dual part of this dual number."""
+        raise NotImplementedError
+
+    @property
+    def imag(self):
+        """Return the imaginary part of this dual number."""
+        return 0
+
+    @abc.abstractmethod
+    def __add__(self, other):
+        """self + other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __radd__(self, other):
+        """other + self"""
+        raise NotImplementedError
+
+    def __sub__(self, other):
+        """self - other"""
+        return self + -other
+
+    def __rsub__(self, other):
+        """other - self"""
+        return other + -self
+
+    @abc.abstractmethod
+    def __mul__(self, other):
+        """self * other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __rmul__(self, other):
+        """other * self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __truediv__(self, other):
+        """self / other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __rtruediv__(self, other):
+        """other / self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __pow__(self, other):
+        """self ** other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __rpow__(self, other):
+        """other ** self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __pos__(self):
+        """+self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __neg__(self):
+        """-self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __abs__(self):
+        """Returns the non-negative norm of a dual number."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def conjugate(self):
+        """Return self with the sign of its dual part flipped."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __eq__(self, other):
+        """self == other"""
+        raise NotImplementedError
+
+
+# Note that this registration only affects isinstance() checks. The Real class
+# does not inherit any methods implemented by AbstractDual as part of its MRO.
+AbstractDual.register(numbers.Real)
+
+
+# Since Real does not inherit methods from AbstractDual in its MRO, we define
+# a getter function to handle extracting the real and dual parts from any kind
+# of AbstractDual or Real in a standardized way. This helper function always
+# returns floats.
+def _get_real_and_dual_parts(x: AbstractDual) -> tuple[float, float]:
+    """Retrieve the real and dual parts of any AbstractDual as floats."""
+    if type(x) is float:
+        return x, 0.0
+    if type(x) is Dual:
+        return x.real, x.dual
+    if isinstance(x, numbers.Real):
+        return float(x), 0.0
+    if isinstance(x, AbstractDual):
+        return float(x.real), float(x.dual)
+    if not isinstance(x, type) and hasattr(x, "__float__"):
+        return float(x), 0.0
+    raise TypeError(
+        "argument should be an AbstractDual or Real instance,"
+        + " or be convertable to float"
+    )
 
 
 # Several possible string representations for epsilon
@@ -71,7 +211,7 @@ _DUAL_FORMAT_BOTH_PARTS = re.compile(
 # - helpers for creating format strings...
 
 
-class Dual(numbers.Number):
+class Dual(AbstractDual):
     """class docstring"""
 
     __slots__ = ('_real', '_dual')
@@ -84,21 +224,12 @@ class Dual(numbers.Number):
         if dual is None:
 
             if type(real) is float:
-                self._real = real
-                self._dual = 0.0
+                # Shortcut for very common case
+                self._real, self._dual = real, 0.0
                 return self
 
-            if isinstance(real, Dual):
-                self._real = real.real
-                self._dual = real.dual
-                return self
-
-            if (
-                isinstance(real, numbers.Real)
-                or (not isinstance(real, type) and hasattr(real, '__float__'))
-            ):
-                self._real = float(real)
-                self._dual = 0.0
+            if isinstance(real, AbstractDual):
+                self._real, self._dual = _get_real_and_dual_parts(real)
                 return self
 
             if isinstance(real, str):
@@ -121,47 +252,34 @@ class Dual(numbers.Number):
                 raise ValueError(f"invalid literal for Dual: {real!r}")
 
             raise TypeError(
-                "argument should be a string or a Dual "
-                + "instance or be convertable to float"
+                "argument should be a string, an AbstractDual or Real"
+                + " instance, or be convertable to float"
             )
 
-        if type(real) is float is type(dual):
-            self._real = real
-            self._dual = dual
+        if type(real) is float and type(dual) is float:
+            # Shortcut for very common case
+            self._real, self._dual = real, dual
             return self
 
-        if isinstance(real, Dual) and isinstance(dual, Dual):
-            self._real = real.real
-            self._dual = dual.real + real.dual
+        if isinstance(real, AbstractDual) and isinstance(dual, AbstractDual):
+            real_real, real_dual = _get_real_and_dual_parts(real)
+            dual_real, _dual_dual = _get_real_and_dual_parts(dual)
+            self._real = real_real
+            self._dual = dual_real + real_dual
             return self
 
-        if isinstance(real, numbers.Real) and isinstance(dual, numbers.Real):
-            self._real = float(real)
-            self._dual = float(dual)
-            return self
-
-        if isinstance(real, Dual) and isinstance(dual, numbers.Real):
-            self._real = real.real
-            self._dual = float(dual)
-            return self
-
-        if isinstance(real, numbers.Real) and isinstance(dual, Dual):
-            self._real = float(real)
-            self._dual = dual.real
-            return self
-
-        raise TypeError("both arguments should be Dual or Real instances")
+        raise TypeError(
+            "both arguments should be AbstractDual or Real instances"
+        )
 
     @classmethod
     def from_number(cls, number):
-        """Convert other types of number to a dual number instance."""
-        if type(number) is float:
-            return cls(number)
+        """Convert other types of number to a dual number."""
         if (
-            isinstance(number, numbers.Real)
-            or (not isinstance(number, type) and hasattr(number, '__float__'))
+            isinstance(number, AbstractDual)
+            or (not isinstance(number, type) and hasattr(number, "__float__"))
         ):
-            return cls(float(number))
+            return cls(number)
         raise TypeError("number should be a float or be convertable to float")
 
     @classmethod
@@ -170,8 +288,8 @@ class Dual(numbers.Number):
         if type(float_) is float:
             return cls(float_)
         raise TypeError(
-            f"{cls.__name__}.from_float() accepts only floats"
-            + f", not {float_!r} ({type(float_).__name__})"
+            f"{cls.__name__}.from_float() accepts only floats,"
+            + f" not {float_!r} ({type(float_).__name__})"
         )
 
     @classmethod
@@ -188,6 +306,10 @@ class Dual(numbers.Number):
         """Return a pair of floats (real, dual) composing the dual number."""
         return self._real, self._dual
 
+    def as_dual(self):
+        """Convert self to a dual number with float parts."""
+        return self
+
     @property
     def real(self):
         return self._real
@@ -195,6 +317,10 @@ class Dual(numbers.Number):
     @property
     def dual(self):
         return self._dual
+
+    @property
+    def imag(self):
+        return 0.0
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._real!r}, {self._dual!r})"
@@ -227,8 +353,8 @@ class Dual(numbers.Number):
         forward.__doc__ = monomorphic_operator.__doc__
 
         def reverse(b, a):
-            if isinstance(a, numbers.Real):
-                return monomorphic_operator(Dual(float(a)), b)
+            if isinstance(a, AbstractDual):
+                return monomorphic_operator(Dual(a), b)
             # If b is something else (including subtypes of Complex), then we
             # do not implement a solution. This return value will lead to a
             # TypeError being raised.
@@ -343,14 +469,12 @@ class Dual(numbers.Number):
 
     def __eq__(a, b):
         """a == b"""
-        if type(b) is float or type(b) is int:
-            return a._real == b and a._dual == 0.0
         if isinstance(b, Dual):
             return a._real == b.real and a._dual == b.dual
-        if isinstance(b, numbers.Real):
-            return a._real == float(b) and a._dual == 0.0
-        if isinstance(b, numbers.Complex) and b.imag == 0.0:
-            return a._real == b.real and a._dual == 0.0
+        if isinstance(b, AbstractDual):
+            return a.as_float_pair() == _get_real_and_dual_parts(b)
+        if isinstance(b, numbers.Complex):
+            return a._real == b.real and a._dual == b.imag == 0.0:
         # Since a does not know how to compare with b, give b the chance to
         # compare itself with a
         return NotImplemented
@@ -360,8 +484,8 @@ class Dual(numbers.Number):
     def _richcmp(self, other, op):
         if isinstance(other, Dual):
             return op(self.as_float_pair(), other.as_float_pair())
-        if isinstance(other, numbers.Real):
-            return op(self.as_float_pair(), (float(other), 0.0))
+        if isinstance(other, AbstractDual):
+            return op(self.as_float_pair(), _get_real_and_dual_parts(other))
         return NotImplemented
 
     def __lt__(a, b):
@@ -389,12 +513,12 @@ class Dual(numbers.Number):
         return self.__class__, (self._real, self._dual)
 
     def __copy__(self):
-        if type(self) == Dual:
+        if type(self) is Dual:
             return self
         return self.__class__(self._real, self._dual)
 
     def __deepcopy__(self):
-        if type(self) == Dual:
+        if type(self) is Dual:
             return self
         return self.__class__(self._real, self._dual)
 
