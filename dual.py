@@ -1,6 +1,7 @@
 """module docstring"""
 
 import abc
+import cmath
 import decimal
 import fractions
 import math
@@ -774,7 +775,33 @@ def atanh(x):
 # Classification and other floating point functions
 
 
-isfinite = None
-isinf = None
-isnan = None
-isclose = None
+def isfinite(x) -> bool:
+    """Return True only if both the real and dual parts of x are finite."""
+    if isinstance(x, Dual):
+        return math.isfinite(x.real) and math.isfinite(x.dual)
+    return math.isfinite(x)
+
+
+def isinf(x) -> bool:
+    """Return True if either the real or dual part of x is infinite."""
+    if isinstance(x, Dual):
+        return math.isinf(x.real) or math.isinf(x.dual)
+    return math.isinf(x)
+
+
+def isnan(x) -> bool:
+    """Return True if either the real or dual part of x is NaN."""
+    if isinstance(x, Dual):
+        return math.isnan(x.real) or math.isnan(x.dual)
+    return math.isnan(x)
+
+
+def isclose(a, b, *, rel_tol=1e-09, abs_tol=0.0) -> bool:
+    """Return True only if the values a and b are close to each other."""
+    if isinstance(a, AbstractDual) and isinstance(b, AbstractDual):
+        a_as_complex = complex(*_get_real_and_dual_parts(a))
+        b_as_complex = complex(*_get_real_and_dual_parts(b))
+        return cmath.isclose(
+            a_as_complex, b_as_complex, rel_tol=rel_tol, abs_tol=abs_tol,
+        )
+    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
