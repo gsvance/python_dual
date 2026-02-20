@@ -726,12 +726,49 @@ def atan(x):
 # Hyperbolic trigonometric functions
 
 
-acosh = None  # acosh(x) with dydx = 1/(sqrt(x-1)*sqrt(x+1))
-asinh = None  # asinh(x) with dydx = 1/sqrt(x**2+1)
-atanh = None  # atanh(x) with dydx = 1/(1-x**2)
-cosh = None  # cosh(x) with dydx = sinh(x)
-sinh = None  # sinh(x) with dydx = cosh(x)
-tanh = None  # tanh(x) with dydx = (sech(x))**2
+def sinh(x):
+    """sinh(x) with dy/dx = cosh(x)"""
+    if isinstance(x, Dual):
+        return Dual(math.sinh(x.real), x.dual * math.cosh(x.real))
+    return Dual(math.sinh(x.real))
+
+
+def cosh(x):
+    """cosh(x) with dy/dx = sinh(x)"""
+    if isinstance(x, Dual):
+        return Dual(math.cosh(x.real), x.dual * math.sinh(x.real))
+    return Dual(math.cosh(x))
+
+
+def tanh(x):
+    """tanh(x) with dy/dx = (sech(x))**2"""
+    if isinstance(x, Dual):
+        return Dual(math.tanh(x.real), x.dual / math.cosh(x.real)**2)
+    return Dual(math.tanh(x))
+
+
+def asinh(x):
+    """asinh(x) with dy/dx = 1/sqrt(x**2+1)"""
+    if isinstance(x, Dual):
+        return Dual(math.asinh(x.real), x.dual / math.sqrt(x.real**2 + 1.0))
+    return Dual(math.asinh(x))
+
+
+def acosh(x):
+    """acosh(x) with dy/dx = 1/(sqrt(x-1)*sqrt(x+1))"""
+    if isinstance(x, Dual):
+        return Dual(
+            math.acosh(x.real),
+            x.dual / math.sqrt((x.real - 1.0) * (x.real + 1.0)),
+        )
+    return Dual(math.acosh(x))
+
+
+def atanh(x):
+    """atanh(x) with dy/dx = 1/(1-x**2)"""
+    if isinstance(x, Dual):
+        return Dual(math.atanh(x.real), x.dual / (1.0 - x.real**2))
+    return Dual(math.atanh(x))
 
 
 # Classification and other floating point functions
