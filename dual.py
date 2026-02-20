@@ -1,5 +1,6 @@
 """module docstring"""
 
+import abc
 import decimal
 import fractions
 import math
@@ -18,6 +19,159 @@ __all__ = [
     'nanep',
     'abs2',
 ]
+
+
+class AbstractDual(numbers.Number):
+    """AbstractDual defines the operations that work on dual numbers.
+
+    In the Python numerical hierarchy, AbstractDual exists "to the side of"
+    Complex. While dual numbers are definitely a kind of Number and every Real
+    is a valid dual number, they are not compatible with complex numbers. Dual
+    numbers have a real part, no imaginary part, and a "dual part," and their
+    "dual conjugate" operation flips the sign on the dual part rather than the
+    imaginary part, with makes it inconsistent with the complex conjugate.
+    """
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def as_dual(self):
+        """Convert self to a concrete dual number with float parts."""
+        raise NotImplementedError
+
+    def __bool__(self):
+        """Return True if self is nonzero and False otherwise."""
+        return self != 0
+
+    @property
+    @abc.abstractmethod
+    def real(self):
+        """Return the real part of this dual number."""
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def dual(self):
+        """Return the dual part of this dual number."""
+        raise NotImplementedError
+
+    @property
+    def imag(self):
+        """Return the imaginary part of this dual number."""
+        return 0
+
+    @abc.abstractmethod
+    def __add__(self, other):
+        """self + other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __radd__(self, other):
+        """other + self"""
+        raise NotImplementedError
+
+    def __sub__(self, other):
+        """self - other"""
+        return self + -other
+
+    def __rsub__(self, other):
+        """other - self"""
+        return other + -self
+
+    @abc.abstractmethod
+    def __mul__(self, other):
+        """self * other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __rmul__(self, other):
+        """other * self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __truediv__(self, other):
+        """self / other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __rtruediv__(self, other):
+        """other / self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __pow__(self, other):
+        """self ** other"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __rpow__(self, other):
+        """other ** self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __pos__(self):
+        """+self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __neg__(self):
+        """-self"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __abs__(self):
+        """Returns the non-negative norm of a dual number."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def conjugate(self):
+        """Return self with the sign of its dual part flipped."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __eq__(self, other):
+        """self == other"""
+        raise NotImplementedError
+
+
+# Note that this registration only affects isinstance() checks. The Real class
+# does not inherit any methods implemented by AbstractDual as part of its MRO.
+AbstractDual.register(numbers.Real)
+
+
+# Since Real does not inherit methods from AbstractDual in its MRO, we define
+# getter functions to handle extracting the real and dual parts from any kind
+# of AbstractDual or Real in a uniform manner. These two helper functions will
+# always return floats.
+
+
+def _get_real_float(x: AbstractDual) -> float:
+    """Retrieve the real part of any AbstractDual as a float."""
+    if type(x) is float:
+        return x
+    if type(x) is Dual:
+        return x.real
+    if isinstance(x, numbers.Real):
+        return float(x)
+    if isinstance(x, AbstractDual):
+        return float(x.real)
+    raise TypeError(
+        f"argument should be an AbstractDual, not {x!r} ({type(x).__name__})"
+    )
+
+
+def _get_dual_float(x: AbstractDual) -> float:
+    """Retrieve the dual part of any AbstractDual as a float."""
+    if type(x) is float:
+        return 0.0
+    if type(x) is Dual:
+        return x.dual
+    if isinstance(x, numbers.Real):
+        return 0.0
+    if isinstance(x, AbstractDual):
+        return float(x.dual)
+    raise TypeError(
+        f"argument should be an AbstractDual, not {x!r} ({type(x).__name__})"
+    )
 
 
 # Several possible string representations for epsilon
